@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { DataSource, Repository } from 'typeorm';
 
 import { Task } from './task.entity';
@@ -9,8 +9,6 @@ import { User } from '../auth/user.entity';
 
 @Injectable()
 export class TaskRepository extends Repository<Task> {
-  private logger = new Logger('TaskRepository', { timestamp: true });
-
   constructor(private readonly dataSource: DataSource) {
     super(Task, dataSource.createEntityManager());
   }
@@ -33,7 +31,7 @@ export class TaskRepository extends Repository<Task> {
     const { status, search } = filterDto;
 
     const query = this.createQueryBuilder('task');
-    query.where({ user });
+    query.where('task.userId = :userId', { userId: user.id });
 
     if (status) {
       query.andWhere('task.status = :status', { status: status });
@@ -41,7 +39,7 @@ export class TaskRepository extends Repository<Task> {
 
     if (search) {
       query.andWhere(
-        '(LOWER(task.title) like :search or LOWER(task.description) like LOWER(:search))',
+        '(task.title ILIKE :search OR task.description ILIKE :search)',
         {
           search: `%${search}%`,
         },

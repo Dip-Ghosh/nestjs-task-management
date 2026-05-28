@@ -1,0 +1,1853 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta content="width=device-width, initial-scale=1" name="viewport" />
+  <title>Task Manager</title>
+  <style>
+      :root {
+          color-scheme: light;
+          --bg: #f6f7f9;
+          --surface: #ffffff;
+          --surface-strong: #eef2f6;
+          --text: #18212f;
+          --muted: #637083;
+          --line: #d8dee8;
+          --accent: #126c61;
+          --accent-strong: #0b534b;
+          --danger: #b42318;
+          --warning: #8a5a00;
+          --done: #1f7a4f;
+          --shadow: 0 16px 36px rgba(24, 33, 47, 0.08);
+          --radius: 8px;
+      }
+
+      * {
+          box-sizing: border-box;
+      }
+
+      body {
+          margin: 0;
+          min-width: 320px;
+          min-height: 100vh;
+          background: var(--bg);
+          color: var(--text);
+          font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+          letter-spacing: 0;
+      }
+
+      button,
+      input,
+      select,
+      textarea {
+          font: inherit;
+      }
+
+      button {
+          min-height: 40px;
+          border: 1px solid transparent;
+          border-radius: 7px;
+          cursor: pointer;
+          font-weight: 700;
+          transition: background 120ms ease, border-color 120ms ease, color 120ms ease, transform 120ms ease;
+      }
+
+      button:active {
+          transform: translateY(1px);
+      }
+
+      button:disabled {
+          cursor: not-allowed;
+          opacity: 0.62;
+          transform: none;
+      }
+
+      input,
+      select,
+      textarea {
+          width: 100%;
+          min-height: 42px;
+          border: 1px solid var(--line);
+          border-radius: 7px;
+          background: #fff;
+          color: var(--text);
+          padding: 10px 12px;
+          outline: none;
+      }
+
+      textarea {
+          min-height: 98px;
+          resize: vertical;
+      }
+
+      input:focus,
+      select:focus,
+      textarea:focus {
+          border-color: var(--accent);
+          box-shadow: 0 0 0 3px rgba(18, 108, 97, 0.12);
+      }
+
+      label,
+      .filter-field {
+          display: grid;
+          gap: 7px;
+          color: var(--muted);
+          font-size: 0.88rem;
+          font-weight: 700;
+      }
+
+      .app-shell {
+          min-height: 100vh;
+          display: grid;
+          grid-template-rows: auto 1fr;
+      }
+
+      .topbar {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 16px;
+          padding: 18px clamp(16px, 4vw, 40px);
+          border-bottom: 1px solid var(--line);
+          background: rgba(255, 255, 255, 0.92);
+          backdrop-filter: blur(12px);
+          position: sticky;
+          top: 0;
+          z-index: 10;
+      }
+
+      .brand {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          min-width: 0;
+      }
+
+      .brand-mark {
+          width: 38px;
+          height: 38px;
+          border-radius: 8px;
+          display: grid;
+          place-items: center;
+          background: var(--accent);
+          color: #fff;
+          font-weight: 900;
+      }
+
+      .brand-title {
+          margin: 0;
+          font-size: 1.12rem;
+          line-height: 1.1;
+          white-space: nowrap;
+      }
+
+      .brand-subtitle {
+          margin: 3px 0 0;
+          color: var(--muted);
+          font-size: 0.82rem;
+      }
+
+      .session {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          min-width: 0;
+      }
+
+      .username {
+          max-width: 220px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          color: var(--muted);
+          font-weight: 700;
+      }
+
+      .main {
+          width: min(1180px, calc(100% - 32px));
+          margin: 28px auto 44px;
+      }
+
+      body.auth-page {
+          background: linear-gradient(135deg, rgba(18, 108, 97, 0.1), transparent 32%),
+          linear-gradient(315deg, rgba(40, 76, 120, 0.12), transparent 36%),
+          #f6f7f9;
+      }
+
+      body.auth-page .main {
+          width: min(1040px, calc(100% - 32px));
+          min-height: 100vh;
+          margin: 0 auto;
+          display: grid;
+          align-items: center;
+          padding: 32px 0;
+      }
+
+      .auth-layout {
+          display: grid;
+          align-items: center;
+      }
+
+      .auth-panel {
+          width: min(980px, 100%);
+          margin: 0 auto;
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) minmax(330px, 0.92fr);
+          border: 1px solid var(--line);
+          border-radius: 8px;
+          overflow: hidden;
+          background: var(--surface);
+          box-shadow: 0 24px 70px rgba(24, 33, 47, 0.16);
+      }
+
+      .auth-side {
+          background: #16251f;
+          color: #fff;
+          padding: 36px;
+          display: grid;
+          align-content: space-between;
+          gap: 34px;
+          min-height: 560px;
+      }
+
+      .auth-side h2 {
+          margin: 0;
+          font-size: 2.35rem;
+          line-height: 1.1;
+          max-width: 12ch;
+      }
+
+      .auth-kicker {
+          margin: 0 0 12px;
+          color: rgba(255, 255, 255, 0.68);
+          font-size: 0.78rem;
+          font-weight: 900;
+          text-transform: uppercase;
+      }
+
+      .auth-preview {
+          display: grid;
+          gap: 12px;
+      }
+
+      .preview-row {
+          display: grid;
+          grid-template-columns: auto minmax(0, 1fr) auto;
+          gap: 12px;
+          align-items: center;
+          min-height: 58px;
+          padding: 12px;
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          border-radius: 8px;
+          background: rgba(255, 255, 255, 0.07);
+      }
+
+      .preview-check {
+          width: 28px;
+          height: 28px;
+          border-radius: 7px;
+          display: grid;
+          place-items: center;
+          background: rgba(255, 255, 255, 0.14);
+          color: #f7d36c;
+          font-weight: 900;
+      }
+
+      .preview-line {
+          height: 10px;
+          border-radius: 999px;
+          background: rgba(255, 255, 255, 0.78);
+      }
+
+      .preview-line.short {
+          width: 58%;
+          margin-top: 8px;
+          background: rgba(255, 255, 255, 0.34);
+      }
+
+      .preview-pill {
+          min-width: 66px;
+          padding: 5px 8px;
+          border-radius: 999px;
+          background: rgba(247, 211, 108, 0.16);
+          color: #f7d36c;
+          font-size: 0.72rem;
+          font-weight: 900;
+          text-align: center;
+      }
+
+      .auth-metrics {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 10px;
+      }
+
+      .metric {
+          border: 1px solid rgba(255, 255, 255, 0.16);
+          border-radius: 8px;
+          padding: 12px;
+          background: rgba(255, 255, 255, 0.06);
+      }
+
+      .metric strong {
+          display: block;
+          font-size: 1.18rem;
+      }
+
+      .metric span {
+          color: rgba(255, 255, 255, 0.72);
+          font-size: 0.78rem;
+      }
+
+      .auth-form {
+          padding: clamp(26px, 4vw, 46px);
+          display: grid;
+          gap: 22px;
+          align-content: center;
+          background: #fff;
+      }
+
+      .auth-heading {
+          display: grid;
+          gap: 8px;
+      }
+
+      .auth-logo {
+          width: 46px;
+          height: 46px;
+          border-radius: 8px;
+          display: grid;
+          place-items: center;
+          background: var(--accent);
+          color: #fff;
+          font-weight: 900;
+      }
+
+      .auth-heading h1 {
+          margin: 0;
+          font-size: 1.75rem;
+          line-height: 1.12;
+      }
+
+      .auth-heading p {
+          margin: 0;
+          color: var(--muted);
+          line-height: 1.45;
+      }
+
+      .auth-alert {
+          display: grid;
+          grid-template-columns: auto minmax(0, 1fr);
+          gap: 10px;
+          align-items: start;
+          padding: 12px;
+          border: 1px solid #f2b8b5;
+          border-radius: 8px;
+          background: #fff5f4;
+          color: #8f1d18;
+          line-height: 1.4;
+      }
+
+      .auth-alert-icon {
+          width: 24px;
+          height: 24px;
+          border-radius: 999px;
+          display: grid;
+          place-items: center;
+          background: #f9d2cf;
+          color: #8f1d18;
+          font-size: 0.82rem;
+          font-weight: 900;
+      }
+
+      .auth-alert strong {
+          display: block;
+          margin-bottom: 2px;
+          color: #651411;
+      }
+
+      .auth-alert p {
+          margin: 0;
+          color: #8f1d18;
+      }
+
+      .tabs {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 4px;
+          padding: 4px;
+          border-radius: 8px;
+          background: var(--surface-strong);
+      }
+
+      .tab {
+          background: transparent;
+          color: var(--muted);
+      }
+
+      .tab.active {
+          background: var(--surface);
+          color: var(--text);
+          box-shadow: 0 1px 6px rgba(24, 33, 47, 0.08);
+      }
+
+      .form-grid {
+          display: grid;
+          gap: 15px;
+      }
+
+      .auth-form .primary {
+          min-height: 46px;
+      }
+
+      .workspace {
+          display: grid;
+          gap: 20px;
+      }
+
+      .dashboard-intro {
+          display: grid;
+          grid-template-columns: minmax(260px, 0.85fr) minmax(0, 1.15fr);
+          gap: 18px;
+          align-items: stretch;
+      }
+
+      .welcome-panel {
+          min-height: 188px;
+          padding: 24px;
+          display: grid;
+          align-content: space-between;
+          gap: 22px;
+          border: 1px solid #b9d7d2;
+          border-radius: var(--radius);
+          background: #f4fbf9;
+          box-shadow: var(--shadow);
+      }
+
+      .eyebrow {
+          display: inline-flex;
+          width: max-content;
+          min-height: 26px;
+          align-items: center;
+          padding: 4px 9px;
+          border-radius: 999px;
+          background: #dff3ef;
+          color: var(--accent-strong);
+          font-size: 0.72rem;
+          font-weight: 900;
+          text-transform: uppercase;
+      }
+
+      .welcome-panel h2 {
+          margin: 12px 0 8px;
+          font-size: clamp(1.7rem, 3vw, 2.45rem);
+          line-height: 1.05;
+      }
+
+      .welcome-panel p {
+          margin: 0;
+          max-width: 58ch;
+          color: #425466;
+          line-height: 1.48;
+      }
+
+      .progress-track {
+          height: 10px;
+          border-radius: 999px;
+          overflow: hidden;
+          background: #d8e8e5;
+      }
+
+      .progress-fill {
+          width: 0%;
+          height: 100%;
+          border-radius: inherit;
+          background: var(--accent);
+          transition: width 180ms ease;
+      }
+
+      .stats-grid {
+          display: grid;
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+          gap: 12px;
+      }
+
+      .stat-card {
+          min-height: 188px;
+          padding: 18px;
+          display: grid;
+          align-content: space-between;
+          gap: 18px;
+          border: 1px solid var(--line);
+          border-radius: var(--radius);
+          background: var(--surface);
+          box-shadow: var(--shadow);
+      }
+
+      .stat-card.total {
+          border-color: #c9d7ed;
+          background: #f7faff;
+      }
+
+      .stat-card.open {
+          border-color: #efd8ac;
+          background: #fffaf0;
+      }
+
+      .stat-card.progress {
+          border-color: #bfd5f0;
+          background: #f2f7ff;
+      }
+
+      .stat-card.done {
+          border-color: #bfe0ce;
+          background: #f4fbf7;
+      }
+
+      .stat-label {
+          color: var(--muted);
+          font-size: 0.76rem;
+          font-weight: 900;
+          text-transform: uppercase;
+      }
+
+      .stat-value {
+          display: block;
+          margin-top: 10px;
+          font-size: 2rem;
+          line-height: 1;
+          font-weight: 900;
+          color: var(--text);
+      }
+
+      .stat-note {
+          color: var(--muted);
+          font-size: 0.82rem;
+          line-height: 1.35;
+      }
+
+      .dashboard-grid {
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 18px;
+          align-items: start;
+      }
+
+      .panel {
+          background: var(--surface);
+          border: 1px solid var(--line);
+          border-radius: var(--radius);
+          box-shadow: var(--shadow);
+      }
+
+      .task-form {
+          padding: 20px;
+          display: grid;
+          gap: 16px;
+          overflow: hidden;
+      }
+
+      .task-form-head {
+          display: grid;
+          gap: 6px;
+          padding-bottom: 14px;
+          border-bottom: 1px solid var(--line);
+      }
+
+      .task-form-head p {
+          margin: 0;
+          color: var(--muted);
+          line-height: 1.4;
+      }
+
+      .welcome-actions {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) auto;
+          gap: 14px;
+          align-items: center;
+      }
+
+      .panel-title {
+          margin: 0;
+          font-size: 1.08rem;
+          line-height: 1.2;
+      }
+
+      .list-panel {
+          overflow: hidden;
+      }
+
+      .list-header {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) auto;
+          gap: 14px;
+          align-items: end;
+          padding: 20px;
+          border-bottom: 1px solid var(--line);
+          background: #fff;
+      }
+
+      .list-header-copy {
+          display: grid;
+          gap: 8px;
+      }
+
+      .toolbar {
+          display: grid;
+          grid-template-columns: minmax(220px, 1fr) auto;
+          gap: 10px;
+          align-items: end;
+      }
+
+      .filter-group {
+          min-height: 42px;
+          display: inline-grid;
+          grid-template-columns: repeat(4, minmax(82px, 1fr));
+          gap: 4px;
+          padding: 4px;
+          border: 1px solid var(--line);
+          border-radius: 8px;
+          background: var(--surface-strong);
+      }
+
+      .filter-button {
+          min-height: 32px;
+          border: 0;
+          border-radius: 6px;
+          background: transparent;
+          color: var(--muted);
+          padding: 0 10px;
+          font-size: 0.84rem;
+          font-weight: 900;
+          white-space: nowrap;
+      }
+
+      .filter-button.active {
+          background: #fff;
+          color: var(--accent-strong);
+          box-shadow: 0 1px 6px rgba(24, 33, 47, 0.08);
+      }
+
+      .summary {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+      }
+
+      .chip {
+          display: inline-flex;
+          align-items: center;
+          min-height: 28px;
+          padding: 4px 9px;
+          border-radius: 999px;
+          background: var(--surface-strong);
+          color: var(--muted);
+          font-size: 0.78rem;
+          font-weight: 800;
+          white-space: nowrap;
+      }
+
+      .tasks {
+          display: grid;
+          gap: 0;
+          padding: 0;
+          min-height: 300px;
+      }
+
+      .task-list-head {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) 140px 190px 110px;
+          gap: 14px;
+          align-items: center;
+          min-height: 46px;
+          padding: 0 18px;
+          border-bottom: 1px solid var(--line);
+          background: #f6f8fb;
+          color: var(--muted);
+          font-size: 0.72rem;
+          font-weight: 900;
+          text-transform: uppercase;
+      }
+
+      .task-card {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) 140px 190px 110px;
+          gap: 14px;
+          align-items: center;
+          min-height: 92px;
+          padding: 16px 18px;
+          border-bottom: 1px solid var(--line);
+          background: var(--surface);
+          transition: background 120ms ease, box-shadow 120ms ease;
+      }
+
+      .task-card:hover {
+          background: #fbfcfe;
+          box-shadow: inset 3px 0 0 var(--accent);
+      }
+
+      .task-card:last-child {
+          border-bottom: 0;
+      }
+
+      .task-card[data-status="DONE"] {
+          background: #f8fcfa;
+      }
+
+      .task-card[data-status="DONE"] h3 {
+          color: #49685c;
+          text-decoration: line-through;
+          text-decoration-thickness: 2px;
+      }
+
+      .task-content {
+          min-width: 0;
+          display: grid;
+          gap: 7px;
+      }
+
+      .task-title-row {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          min-width: 0;
+      }
+
+      .task-card h3 {
+          margin: 0;
+          font-size: 1rem;
+          line-height: 1.25;
+          overflow-wrap: anywhere;
+      }
+
+      .task-card p {
+          margin: 0;
+          color: var(--muted);
+          line-height: 1.4;
+          overflow-wrap: anywhere;
+      }
+
+      .task-index {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          flex: 0 0 auto;
+          width: 28px;
+          height: 28px;
+          border-radius: 7px;
+          background: #eef4f7;
+          color: var(--muted);
+          font-size: 0.76rem;
+          font-weight: 900;
+      }
+
+      .status-badge {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          min-height: 26px;
+          width: max-content;
+          padding: 4px 8px;
+          border-radius: 999px;
+          font-size: 0.72rem;
+          font-weight: 900;
+          letter-spacing: 0;
+          background: var(--surface-strong);
+          color: var(--muted);
+      }
+
+      .status-badge.open {
+          background: #fff4e0;
+          color: var(--warning);
+      }
+
+      .status-badge.in-progress {
+          background: #eaf3ff;
+          color: #245a91;
+      }
+
+      .status-badge.done {
+          background: #e5f6ec;
+          color: var(--done);
+      }
+
+      .task-status {
+          display: flex;
+          align-items: center;
+          justify-content: flex-start;
+      }
+
+      .task-update select {
+          min-height: 36px;
+          padding: 7px 10px;
+          font-size: 0.88rem;
+      }
+
+      .task-update {
+          min-width: 0;
+      }
+
+      .actions {
+          display: flex;
+          gap: 8px;
+          justify-content: end;
+          align-items: center;
+      }
+
+      .primary {
+          background: var(--accent);
+          color: #fff;
+      }
+
+      .primary:hover {
+          background: var(--accent-strong);
+      }
+
+      .secondary {
+          background: #fff;
+          border-color: var(--line);
+          color: var(--text);
+      }
+
+      .secondary:hover {
+          border-color: var(--accent);
+          color: var(--accent-strong);
+      }
+
+      .danger {
+          min-width: 42px;
+          min-height: 36px;
+          background: #fff;
+          border-color: #f1c1bd;
+          color: var(--danger);
+          padding: 0 12px;
+      }
+
+      .danger:hover {
+          background: #fff4f2;
+      }
+
+      .danger:disabled {
+          border-color: var(--line);
+          background: #f3f5f7;
+          color: #9aa4b2;
+      }
+
+      .empty {
+          min-height: 260px;
+          display: grid;
+          place-items: center;
+          border: 1px dashed var(--line);
+          border-radius: var(--radius);
+          color: var(--muted);
+          text-align: center;
+          padding: 28px;
+          margin: 14px;
+      }
+
+      .empty h3 {
+          margin: 0;
+          color: var(--text);
+          font-size: 1rem;
+      }
+
+      .empty p {
+          margin: 8px 0 0;
+          max-width: 320px;
+          line-height: 1.45;
+      }
+
+      .skeleton-list {
+          display: grid;
+          gap: 0;
+      }
+
+      .skeleton-row {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) 140px 190px 110px;
+          gap: 14px;
+          align-items: center;
+          min-height: 88px;
+          padding: 16px 18px;
+          border-bottom: 1px solid var(--line);
+      }
+
+      .skeleton-line {
+          height: 12px;
+          border-radius: 999px;
+          background: linear-gradient(90deg, #edf1f5, #f7f9fb, #edf1f5);
+          background-size: 220% 100%;
+          animation: shimmer 1.2s linear infinite;
+      }
+
+      .skeleton-line.short {
+          width: 58%;
+          margin-top: 10px;
+      }
+
+      .modal-backdrop {
+          position: fixed;
+          inset: 0;
+          z-index: 30;
+          display: grid;
+          place-items: center;
+          padding: 20px;
+          background: rgba(15, 23, 42, 0.45);
+          backdrop-filter: blur(8px);
+      }
+
+      .modal {
+          width: min(520px, 100%);
+          max-height: min(720px, calc(100vh - 40px));
+          overflow: auto;
+          border: 1px solid var(--line);
+          border-radius: 8px;
+          background: #fff;
+          box-shadow: 0 24px 70px rgba(15, 23, 42, 0.24);
+      }
+
+      .modal-head {
+          display: flex;
+          justify-content: space-between;
+          gap: 16px;
+          align-items: flex-start;
+          padding: 20px;
+          border-bottom: 1px solid var(--line);
+      }
+
+      .modal-head h2 {
+          margin: 0;
+          font-size: 1.18rem;
+      }
+
+      .modal-head p {
+          margin: 6px 0 0;
+          color: var(--muted);
+          line-height: 1.4;
+      }
+
+      .icon-button {
+          width: 38px;
+          min-height: 38px;
+          display: grid;
+          place-items: center;
+          border-color: var(--line);
+          background: #fff;
+          color: var(--muted);
+          font-size: 1.35rem;
+          line-height: 1;
+      }
+
+      .icon-button:hover {
+          border-color: var(--accent);
+          color: var(--accent-strong);
+      }
+
+      .modal .task-form {
+          box-shadow: none;
+          border: 0;
+          border-radius: 0;
+          padding: 20px;
+      }
+
+      .modal-actions {
+          display: flex;
+          justify-content: flex-end;
+          gap: 10px;
+      }
+
+      @keyframes shimmer {
+          from {
+              background-position: 220% 0;
+          }
+
+          to {
+              background-position: -220% 0;
+          }
+      }
+
+      .toast {
+          position: fixed;
+          right: 18px;
+          bottom: 18px;
+          z-index: 20;
+          max-width: min(420px, calc(100vw - 36px));
+          padding: 12px 14px;
+          border-radius: 8px;
+          background: #17231f;
+          color: #fff;
+          box-shadow: var(--shadow);
+          opacity: 0;
+          pointer-events: none;
+          transform: translateY(10px);
+          transition: opacity 160ms ease, transform 160ms ease;
+          overflow-wrap: anywhere;
+      }
+
+      .toast.show {
+          opacity: 1;
+          transform: translateY(0);
+      }
+
+      .hidden {
+          display: none !important;
+      }
+
+      @media (max-width: 1100px) {
+          .dashboard-grid {
+              grid-template-columns: 1fr;
+          }
+
+          .task-form {
+              position: static;
+          }
+      }
+
+      @media (max-width: 900px) {
+          .auth-panel,
+          .dashboard-intro,
+          .dashboard-grid {
+              grid-template-columns: 1fr;
+          }
+
+          .stats-grid {
+              grid-template-columns: repeat(2, minmax(0, 1fr));
+          }
+
+          .auth-side {
+              min-height: auto;
+          }
+
+          .auth-preview {
+              display: none;
+          }
+
+          .task-form {
+              position: static;
+          }
+
+          .task-card {
+              grid-template-columns: 1fr;
+              border-bottom: 1px solid var(--line);
+          }
+
+          .task-list-head {
+              display: none;
+          }
+
+          .skeleton-row {
+              grid-template-columns: 1fr;
+          }
+
+          .actions {
+              justify-content: stretch;
+          }
+
+          .actions button {
+              width: 100%;
+          }
+      }
+
+      @media (max-width: 640px) {
+          .topbar {
+              align-items: flex-start;
+              flex-direction: column;
+          }
+
+          .session {
+              width: 100%;
+              justify-content: space-between;
+          }
+
+          .main {
+              width: min(100% - 20px, 1180px);
+              margin-top: 16px;
+          }
+
+          body.auth-page .main {
+              width: min(100% - 20px, 1040px);
+              margin-top: 0;
+              padding: 16px 0;
+          }
+
+          .auth-side,
+          .auth-form {
+              padding: 20px;
+          }
+
+          .auth-metrics,
+          .stats-grid,
+          .toolbar,
+          .welcome-actions,
+          .list-header {
+              grid-template-columns: 1fr;
+          }
+
+          .filter-group {
+              width: 100%;
+              grid-template-columns: repeat(2, minmax(0, 1fr));
+          }
+
+          .welcome-panel,
+          .stat-card {
+              min-height: auto;
+          }
+      }
+  </style>
+</head>
+<body class="auth-page">
+<div class="app-shell">
+  <header class="topbar hidden" id="topbar">
+    <div class="brand">
+      <div aria-hidden="true" class="brand-mark">TM</div>
+      <div>
+        <h1 class="brand-title">Task Manager</h1>
+        <p class="brand-subtitle" id="session-state">Signed out</p>
+      </div>
+    </div>
+    <div class="session hidden" id="session-controls">
+      <span class="username" id="current-user"></span>
+      <button class="secondary" id="refresh-button" type="button">Refresh</button>
+      <button class="secondary" id="signout-button" type="button">Sign out</button>
+    </div>
+  </header>
+
+  <main class="main">
+    <section class="auth-layout" id="auth-view">
+      <div class="auth-panel">
+        <div class="auth-side">
+          <div>
+            <p class="auth-kicker">Task Manager</p>
+            <h2>Plan, track, finish.</h2>
+          </div>
+          <div aria-hidden="true" class="auth-preview">
+            <div class="preview-row">
+              <span class="preview-check">1</span>
+              <span>
+                  <span class="preview-line"></span>
+                  <span class="preview-line short"></span>
+                </span>
+              <span class="preview-pill">Open</span>
+            </div>
+            <div class="preview-row">
+              <span class="preview-check">2</span>
+              <span>
+                  <span class="preview-line"></span>
+                  <span class="preview-line short"></span>
+                </span>
+              <span class="preview-pill">Active</span>
+            </div>
+            <div class="preview-row">
+              <span class="preview-check">3</span>
+              <span>
+                  <span class="preview-line"></span>
+                  <span class="preview-line short"></span>
+                </span>
+              <span class="preview-pill">Done</span>
+            </div>
+          </div>
+          <div class="auth-metrics">
+            <div class="metric">
+              <strong id="metric-open">0</strong>
+              <span>Open</span>
+            </div>
+            <div class="metric">
+              <strong id="metric-progress">0</strong>
+              <span>Active</span>
+            </div>
+            <div class="metric">
+              <strong id="metric-done">0</strong>
+              <span>Done</span>
+            </div>
+          </div>
+        </div>
+
+        <form class="auth-form" id="auth-form">
+          <div class="auth-heading">
+            <div aria-hidden="true" class="auth-logo">TM</div>
+            <div>
+              <h1 id="auth-title">Welcome back</h1>
+              <p id="auth-copy">Sign in to manage your tasks.</p>
+            </div>
+          </div>
+
+          <div aria-label="Authentication mode" class="tabs" role="tablist">
+            <button class="tab active" id="signin-tab" type="button">Sign in</button>
+            <button class="tab" id="signup-tab" type="button">Sign up</button>
+          </div>
+
+          <div class="auth-alert hidden" id="auth-error" role="alert">
+            <span aria-hidden="true" class="auth-alert-icon">!</span>
+            <div>
+              <strong id="auth-error-title">Unable to sign in</strong>
+              <p id="auth-error-message"></p>
+            </div>
+          </div>
+
+          <div class="form-grid">
+            <label>
+              Username
+              <input autocomplete="username" id="username" maxlength="20" minlength="4" name="username" required />
+            </label>
+            <label>
+              Password
+              <input autocomplete="current-password" id="password" maxlength="32" minlength="8" name="password" required type="password" />
+            </label>
+            <button class="primary" id="auth-submit" type="submit">Sign in</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <section class="workspace hidden" id="task-view">
+      <section aria-labelledby="dashboard-title" class="dashboard-intro">
+        <div class="welcome-panel">
+          <div>
+            <span class="eyebrow">Dashboard</span>
+            <h2 id="dashboard-title">Hello, <span id="dashboard-user">there</span></h2>
+            <p id="dashboard-copy">Your workspace is ready.</p>
+          </div>
+          <div class="welcome-actions">
+            <div aria-hidden="true" class="progress-track">
+              <div class="progress-fill" id="progress-fill"></div>
+            </div>
+            <button class="primary" id="open-task-modal" type="button">New task</button>
+          </div>
+        </div>
+
+        <div aria-label="Task summary" class="stats-grid">
+          <article class="stat-card total">
+            <div>
+              <span class="stat-label">Total</span>
+              <strong class="stat-value" id="dashboard-total">0</strong>
+            </div>
+            <span class="stat-note">All visible tasks</span>
+          </article>
+          <article class="stat-card open">
+            <div>
+              <span class="stat-label">Open</span>
+              <strong class="stat-value" id="dashboard-open">0</strong>
+            </div>
+            <span class="stat-note">Waiting to start</span>
+          </article>
+          <article class="stat-card progress">
+            <div>
+              <span class="stat-label">Active</span>
+              <strong class="stat-value" id="dashboard-progress">0</strong>
+            </div>
+            <span class="stat-note">In progress</span>
+          </article>
+          <article class="stat-card done">
+            <div>
+              <span class="stat-label">Done</span>
+              <strong class="stat-value" id="dashboard-done">0</strong>
+            </div>
+            <span class="stat-note">Completed</span>
+          </article>
+        </div>
+      </section>
+
+      <div class="dashboard-grid">
+        <section aria-labelledby="task-list-title" class="panel list-panel">
+          <div class="list-header">
+            <div class="list-header-copy">
+              <h2 class="panel-title" id="task-list-title">Task list</h2>
+              <div class="summary" id="task-summary"></div>
+            </div>
+            <div class="toolbar">
+              <label>
+                Search
+                <input autocomplete="off" id="search" type="search" />
+              </label>
+              <div class="filter-field">
+                <span>Status</span>
+                <div aria-label="Filter tasks by status" class="filter-group" id="status-filter" role="group">
+                  <button class="filter-button active" data-status="" type="button">All</button>
+                  <button class="filter-button" data-status="OPEN" type="button">Open</button>
+                  <button class="filter-button" data-status="IN_PROGRESS" type="button">Active</button>
+                  <button class="filter-button" data-status="DONE" type="button">Done</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="tasks" id="tasks"></div>
+        </section>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div aria-labelledby="task-modal-title" aria-modal="true" class="modal-backdrop hidden" id="task-modal" role="dialog">
+  <div class="modal">
+    <div class="modal-head">
+      <div>
+        <h2 id="task-modal-title">Create task</h2>
+        <p>Capture the work clearly before it enters your list.</p>
+      </div>
+      <button aria-label="Close task form" class="icon-button" id="close-task-modal" type="button">&times;</button>
+    </div>
+    <form class="task-form" id="task-form">
+      <label>
+        Title
+        <input id="task-title" maxlength="100" name="title" required />
+      </label>
+      <label>
+        Description
+        <textarea id="task-description" name="description" required></textarea>
+      </label>
+      <div class="modal-actions">
+        <button class="secondary" id="cancel-task-modal" type="button">Cancel</button>
+        <button class="primary" type="submit">Create task</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div aria-live="polite" class="toast" id="toast" role="status"></div>
+
+<script>
+  const STATUS = {
+    OPEN: 'Open',
+    IN_PROGRESS: 'In progress',
+    DONE: 'Done',
+  };
+
+  const state = {
+    mode: 'signin',
+    token: localStorage.getItem('accessToken'),
+    user: null,
+    tasks: [],
+    loading: false,
+    statusFilter: '',
+  };
+
+  const el = {
+    topbar: document.getElementById('topbar'),
+    authView: document.getElementById('auth-view'),
+    taskView: document.getElementById('task-view'),
+    sessionControls: document.getElementById('session-controls'),
+    sessionState: document.getElementById('session-state'),
+    currentUser: document.getElementById('current-user'),
+    refreshButton: document.getElementById('refresh-button'),
+    signoutButton: document.getElementById('signout-button'),
+    authForm: document.getElementById('auth-form'),
+    username: document.getElementById('username'),
+    password: document.getElementById('password'),
+    signinTab: document.getElementById('signin-tab'),
+    signupTab: document.getElementById('signup-tab'),
+    authSubmit: document.getElementById('auth-submit'),
+    authTitle: document.getElementById('auth-title'),
+    authCopy: document.getElementById('auth-copy'),
+    authError: document.getElementById('auth-error'),
+    authErrorTitle: document.getElementById('auth-error-title'),
+    authErrorMessage: document.getElementById('auth-error-message'),
+    dashboardUser: document.getElementById('dashboard-user'),
+    dashboardCopy: document.getElementById('dashboard-copy'),
+    progressFill: document.getElementById('progress-fill'),
+    dashboardTotal: document.getElementById('dashboard-total'),
+    dashboardOpen: document.getElementById('dashboard-open'),
+    dashboardProgress: document.getElementById('dashboard-progress'),
+    dashboardDone: document.getElementById('dashboard-done'),
+    openTaskModal: document.getElementById('open-task-modal'),
+    taskModal: document.getElementById('task-modal'),
+    closeTaskModal: document.getElementById('close-task-modal'),
+    cancelTaskModal: document.getElementById('cancel-task-modal'),
+    taskForm: document.getElementById('task-form'),
+    taskTitle: document.getElementById('task-title'),
+    taskDescription: document.getElementById('task-description'),
+    search: document.getElementById('search'),
+    statusFilter: document.getElementById('status-filter'),
+    statusFilterButtons: Array.from(document.querySelectorAll('.filter-button')),
+    tasks: document.getElementById('tasks'),
+    taskSummary: document.getElementById('task-summary'),
+    metricOpen: document.getElementById('metric-open'),
+    metricProgress: document.getElementById('metric-progress'),
+    metricDone: document.getElementById('metric-done'),
+    toast: document.getElementById('toast'),
+  };
+
+  function setAuthMode(mode) {
+    state.mode = mode;
+    const isSignin = mode === 'signin';
+    clearAuthError();
+    el.signinTab.classList.toggle('active', isSignin);
+    el.signupTab.classList.toggle('active', !isSignin);
+    el.authSubmit.textContent = isSignin ? 'Sign in' : 'Create account';
+    el.authTitle.textContent = isSignin ? 'Welcome back' : 'Create account';
+    el.authCopy.textContent = isSignin ? 'Sign in to manage your tasks.' : 'Create your workspace access.';
+    el.password.autocomplete = isSignin ? 'current-password' : 'new-password';
+  }
+
+  function clearAuthError() {
+    el.authError.classList.add('hidden');
+    el.authErrorTitle.textContent = '';
+    el.authErrorMessage.textContent = '';
+  }
+
+  function showAuthError(message) {
+    el.authErrorTitle.textContent = state.mode === 'signin' ? 'Unable to sign in' : 'Unable to create account';
+    el.authErrorMessage.textContent = formatAuthError(message);
+    el.authError.classList.remove('hidden');
+  }
+
+  function formatAuthError(message) {
+    const text = String(message || '').trim();
+
+    if (!text) {
+      return 'Please check your details and try again.';
+    }
+
+    if (/passwords do not match|user not found|unauthorized/i.test(text)) {
+      return 'The username or password is incorrect.';
+    }
+
+    if (/duplicate|unique|already exists/i.test(text)) {
+      return 'That username is already taken. Try signing in or choose another username.';
+    }
+
+    return text;
+  }
+
+  function setSessionView(isSignedIn) {
+    document.body.classList.toggle('auth-page', !isSignedIn);
+    el.topbar.classList.toggle('hidden', !isSignedIn);
+    el.authView.classList.toggle('hidden', isSignedIn);
+    el.taskView.classList.toggle('hidden', !isSignedIn);
+    el.sessionControls.classList.toggle('hidden', !isSignedIn);
+    el.sessionState.textContent = isSignedIn ? 'Signed in' : 'Signed out';
+    el.currentUser.textContent = state.user?.username || '';
+    el.dashboardUser.textContent = state.user?.username || 'there';
+  }
+
+  function showToast(message) {
+    el.toast.textContent = message;
+    el.toast.classList.add('show');
+    window.clearTimeout(showToast.timer);
+    showToast.timer = window.setTimeout(() => {
+      el.toast.classList.remove('show');
+    }, 3200);
+  }
+
+  async function request(path, options = {}) {
+    const headers = {
+      ...(options.body ? { 'Content-Type': 'application/json' } : {}),
+      ...(state.token ? { Authorization: `Bearer ${state.token}` } : {}),
+      ...(options.headers || {}),
+    };
+
+    const response = await fetch(path, { ...options, headers });
+    const text = await response.text();
+    const data = text ? JSON.parse(text) : null;
+
+    if (!response.ok) {
+      const message = Array.isArray(data?.message) ? data.message.join(' ') : data?.message;
+      throw new Error(message || `Request failed with status ${response.status}`);
+    }
+
+    return data;
+  }
+
+  function buildTaskQuery() {
+    const params = new URLSearchParams();
+    const search = el.search.value.trim();
+    const status = state.statusFilter;
+
+    if (search) {
+      params.set('search', search);
+    }
+
+    if (status) {
+      params.set('status', status);
+    }
+
+    return params.toString() ? `/tasks?${params.toString()}` : '/tasks';
+  }
+
+  function setStatusFilter(status) {
+    state.statusFilter = status;
+    renderStatusFilter();
+    loadTasks();
+  }
+
+  function renderStatusFilter() {
+    el.statusFilterButtons.forEach((button) => {
+      const isActive = button.dataset.status === state.statusFilter;
+      button.classList.toggle('active', isActive);
+      button.setAttribute('aria-pressed', String(isActive));
+    });
+  }
+
+  function openTaskModal() {
+    el.taskModal.classList.remove('hidden');
+    el.taskTitle.focus();
+  }
+
+  function closeTaskModal() {
+    el.taskModal.classList.add('hidden');
+    el.taskForm.reset();
+  }
+
+  async function loadProfile() {
+    state.user = await request('/auth/profile');
+    setSessionView(true);
+  }
+
+  async function loadTasks() {
+    if (!state.token) {
+      return;
+    }
+
+    state.loading = true;
+    renderTasks();
+
+    try {
+      state.tasks = await request(buildTaskQuery());
+      renderTasks();
+    } catch (error) {
+      if (String(error.message).includes('Unauthorized')) {
+        signOut(false);
+      }
+      showToast(error.message);
+    } finally {
+      state.loading = false;
+      renderTasks();
+    }
+  }
+
+  function countStatus(status) {
+    return state.tasks.filter((task) => task.status === status).length;
+  }
+
+  function renderSummary() {
+    const open = countStatus('OPEN');
+    const progress = countStatus('IN_PROGRESS');
+    const done = countStatus('DONE');
+    const total = state.tasks.length;
+    const completion = total ? Math.round((done / total) * 100) : 0;
+
+    el.metricOpen.textContent = open;
+    el.metricProgress.textContent = progress;
+    el.metricDone.textContent = done;
+    el.dashboardTotal.textContent = total;
+    el.dashboardOpen.textContent = open;
+    el.dashboardProgress.textContent = progress;
+    el.dashboardDone.textContent = done;
+    el.progressFill.style.width = `${completion}%`;
+    el.dashboardCopy.textContent = total
+      ? `${completion}% complete with ${progress} active task${progress === 1 ? '' : 's'}.`
+      : 'Create your first task to start tracking progress.';
+
+    el.taskSummary.replaceChildren(
+      chip(`${total} total`),
+      chip(`${open} open`),
+      chip(`${progress} active`),
+      chip(`${done} done`),
+    );
+  }
+
+  function chip(text) {
+    const item = document.createElement('span');
+    item.className = 'chip';
+    item.textContent = text;
+    return item;
+  }
+
+  function renderTasks() {
+    renderSummary();
+    el.tasks.replaceChildren();
+
+    if (state.loading) {
+      el.tasks.append(taskListHead(), loadingRows());
+      return;
+    }
+
+    if (!state.tasks.length) {
+      el.tasks.append(emptyState('No tasks found', 'Create a task or adjust the current filters.'));
+      return;
+    }
+
+    el.tasks.append(taskListHead());
+    state.tasks.forEach((task, index) => {
+      el.tasks.append(taskCard(task, index));
+    });
+  }
+
+  function taskListHead() {
+    const head = document.createElement('div');
+    head.className = 'task-list-head';
+
+    ['Task', 'Status', 'Update', 'Delete'].forEach((label) => {
+      const item = document.createElement('span');
+      item.textContent = label;
+      head.append(item);
+    });
+
+    return head;
+  }
+
+  function loadingRows() {
+    const list = document.createElement('div');
+    list.className = 'skeleton-list';
+
+    for (let index = 0; index < 4; index += 1) {
+      const row = document.createElement('div');
+      row.className = 'skeleton-row';
+
+      const title = document.createElement('div');
+      const titleLine = document.createElement('div');
+      const detailLine = document.createElement('div');
+      titleLine.className = 'skeleton-line';
+      detailLine.className = 'skeleton-line short';
+      title.append(titleLine, detailLine);
+
+      const status = document.createElement('div');
+      status.className = 'skeleton-line';
+
+      const update = document.createElement('div');
+      update.className = 'skeleton-line';
+
+      const action = document.createElement('div');
+      action.className = 'skeleton-line';
+
+      row.append(title, status, update, action);
+      list.append(row);
+    }
+
+    return list;
+  }
+
+  function emptyState(title, detail) {
+    const node = document.createElement('div');
+    node.className = 'empty';
+
+    const heading = document.createElement('h3');
+    heading.textContent = title;
+    node.append(heading);
+
+    if (detail) {
+      const copy = document.createElement('p');
+      copy.textContent = detail;
+      node.append(copy);
+    }
+
+    return node;
+  }
+
+  function taskCard(task, index) {
+    const card = document.createElement('article');
+    card.className = 'task-card';
+    card.dataset.status = task.status;
+
+    const content = document.createElement('div');
+    content.className = 'task-content';
+
+    const titleRow = document.createElement('div');
+    titleRow.className = 'task-title-row';
+
+    const taskIndex = document.createElement('span');
+    taskIndex.className = 'task-index';
+    taskIndex.textContent = String(index + 1).padStart(2, '0');
+
+    const title = document.createElement('h3');
+    const description = document.createElement('p');
+    title.textContent = task.title;
+    description.textContent = task.description;
+    titleRow.append(taskIndex, title);
+    content.append(titleRow, description);
+
+    const statusWrap = document.createElement('div');
+    statusWrap.className = 'task-status';
+
+    const badge = document.createElement('span');
+    badge.className = `status-badge ${statusClass(task.status)}`;
+    badge.textContent = STATUS[task.status] || task.status;
+    statusWrap.append(badge);
+
+    const updateWrap = document.createElement('div');
+    updateWrap.className = 'task-update';
+    const select = document.createElement('select');
+    select.setAttribute('aria-label', `Status for ${task.title}`);
+    Object.entries(STATUS).forEach(([value, label]) => {
+      const option = document.createElement('option');
+      option.value = value;
+      option.textContent = label;
+      option.selected = value === task.status;
+      select.append(option);
+    });
+    select.addEventListener('change', () => updateTaskStatus(task.id, select.value));
+    updateWrap.append(select);
+
+    const actions = document.createElement('div');
+    actions.className = 'actions';
+
+    const isDone = task.status === 'DONE';
+    const deleteButton = document.createElement('button');
+    deleteButton.className = 'danger';
+    deleteButton.type = 'button';
+    deleteButton.textContent = 'Delete';
+    deleteButton.disabled = isDone;
+    deleteButton.title = isDone ? 'Completed tasks cannot be deleted' : `Delete ${task.title}`;
+
+    if (!isDone) {
+      deleteButton.addEventListener('click', () => deleteTask(task.id));
+    }
+
+    actions.append(deleteButton);
+
+    card.append(content, statusWrap, updateWrap, actions);
+    return card;
+  }
+
+  function statusClass(status) {
+    return String(status).toLowerCase().replace('_', '-');
+  }
+
+  async function handleAuth(event) {
+    event.preventDefault();
+    clearAuthError();
+    const username = el.username.value.trim();
+    const password = el.password.value;
+
+    try {
+      if (state.mode === 'signup') {
+        await request('/auth/signup', {
+          method: 'POST',
+          body: JSON.stringify({ username, password }),
+        });
+        setAuthMode('signin');
+        showToast('Account created');
+        return;
+      }
+
+      const data = await request('/auth/signin', {
+        method: 'POST',
+        body: JSON.stringify({ username, password }),
+      });
+      state.token = data.accessToken;
+      localStorage.setItem('accessToken', state.token);
+      await loadProfile();
+      await loadTasks();
+    } catch (error) {
+      showAuthError(error.message);
+    }
+  }
+
+  async function createTask(event) {
+    event.preventDefault();
+    const title = el.taskTitle.value.trim();
+    const description = el.taskDescription.value.trim();
+
+    if (!title || !description) {
+      showToast('Title and description are required');
+      return;
+    }
+
+    try {
+      await request('/tasks', {
+        method: 'POST',
+        body: JSON.stringify({ title, description }),
+      });
+      closeTaskModal();
+      await loadTasks();
+    } catch (error) {
+      showToast(error.message);
+    }
+  }
+
+  async function updateTaskStatus(id, status) {
+    try {
+      await request(`/tasks/${id}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status }),
+      });
+      await loadTasks();
+    } catch (error) {
+      showToast(error.message);
+    }
+  }
+
+  async function deleteTask(id) {
+    try {
+      await request(`/tasks/${id}`, { method: 'DELETE' });
+      await loadTasks();
+    } catch (error) {
+      showToast(error.message);
+    }
+  }
+
+  function signOut(showMessage = true) {
+    state.token = null;
+    state.user = null;
+    state.tasks = [];
+    state.statusFilter = '';
+    closeTaskModal();
+    renderStatusFilter();
+    localStorage.removeItem('accessToken');
+    setSessionView(false);
+    renderTasks();
+    if (showMessage) {
+      showToast('Signed out');
+    }
+  }
+
+  function debounce(fn, wait) {
+    let timer;
+    return (...args) => {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => fn(...args), wait);
+    };
+  }
+
+  el.signinTab.addEventListener('click', () => setAuthMode('signin'));
+  el.signupTab.addEventListener('click', () => setAuthMode('signup'));
+  el.authForm.addEventListener('submit', handleAuth);
+  el.username.addEventListener('input', clearAuthError);
+  el.password.addEventListener('input', clearAuthError);
+  el.taskForm.addEventListener('submit', createTask);
+  el.openTaskModal.addEventListener('click', openTaskModal);
+  el.closeTaskModal.addEventListener('click', closeTaskModal);
+  el.cancelTaskModal.addEventListener('click', closeTaskModal);
+  el.taskModal.addEventListener('click', (event) => {
+    if (event.target === el.taskModal) {
+      closeTaskModal();
+    }
+  });
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && !el.taskModal.classList.contains('hidden')) {
+      closeTaskModal();
+    }
+  });
+  el.refreshButton.addEventListener('click', loadTasks);
+  el.signoutButton.addEventListener('click', () => signOut());
+  el.search.addEventListener('input', debounce(loadTasks, 250));
+  el.statusFilter.addEventListener('click', (event) => {
+    const button = event.target.closest('.filter-button');
+
+    if (button) {
+      setStatusFilter(button.dataset.status);
+    }
+  });
+
+  async function init() {
+    setAuthMode('signin');
+    renderStatusFilter();
+    renderTasks();
+
+    if (!state.token) {
+      setSessionView(false);
+      return;
+    }
+
+    try {
+      await loadProfile();
+      await loadTasks();
+    } catch (error) {
+      signOut(false);
+      showToast(error.message);
+    }
+  }
+
+  init();
+</script>
+</body>
+</html>
